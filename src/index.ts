@@ -27,6 +27,7 @@ import {
   handleListSavedTasks,
 } from "./routes/api/savedTasks";
 import { runTick } from "./jobs/tick";
+import { ensureDatabaseBootstrap } from "./db/bootstrap";
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json" } });
@@ -38,6 +39,7 @@ export default {
     const parts = url.pathname.split("/").filter(Boolean);
 
     if (parts[0] === "api") {
+      await ensureDatabaseBootstrap(env.DB);
       const botId = url.searchParams.get("botId") ?? "";
       const botToken = url.searchParams.get("token") ?? "";
       const botTelegramId = url.searchParams.get("botTelegramId") ?? "";
@@ -165,6 +167,7 @@ export default {
   },
 
   async scheduled(_controller: ScheduledController, env: Env, _ctx: ExecutionContext): Promise<void> {
+    await ensureDatabaseBootstrap(env.DB);
     await runTick(env);
   },
 };

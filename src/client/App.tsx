@@ -28,7 +28,10 @@ function Page() {
 export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     try {
-      return localStorage.getItem("tg_sidebar_collapsed") === "true";
+      return (
+        localStorage.getItem("telegram_sidebar_collapsed") === "true" ||
+        localStorage.getItem("tg_sidebar_collapsed") === "true"
+      );
     } catch {
       return false;
     }
@@ -37,7 +40,7 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem("tg_sidebar_collapsed", String(sidebarCollapsed));
+      localStorage.setItem("telegram_sidebar_collapsed", String(sidebarCollapsed));
     } catch {
       // ignore
     }

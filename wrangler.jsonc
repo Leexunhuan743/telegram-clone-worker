@@ -1,13 +1,13 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "tg-bot-console",
+  "name": "telegram-clone-worker",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-21",
   "compatibility_flags": ["nodejs_compat"],
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "tg-bot-console-db",
+      "database_name": "telegram-clone-worker-db",
       "database_id": "2b655c9c-9591-4e26-925c-4fc520d7a352"
     }
   ],

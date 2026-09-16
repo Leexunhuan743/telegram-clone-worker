@@ -209,7 +209,7 @@ export function TaskWizardPage({ fromSavedId }: { fromSavedId?: string }) {
 
   async function sendTestMessage() {
     const res = await api.post(`/api/chats/${encodeURIComponent(sourceChatId)}/send-test-message?${botQuery()}`, {
-      text: "Test message from TG Console",
+      text: "Test message from Telegram Clone Worker",
     });
     toast.show(res.ok ? "success" : "error", res.ok ? "Test message sent" : res.description);
   }
