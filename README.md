@@ -115,9 +115,10 @@ flowchart LR
 > - This is a Telegram server-side restriction enforced on all bots.
 
 > [!NOTE]
-> **3. Telegram Rate Limits**
+> **3. Telegram Rate Limits & Best Practices**
 > - Telegram limits bots to approximately **20 messages per minute per chat**, and **30 messages per second globally**.
 > - Telegram Clone Worker paces batch copying to ~60 messages/minute in bulk mode. If Telegram returns an HTTP 429 rate limit, the worker automatically pauses that bot for the exact `retry_after` duration returned by Telegram.
+> - **💡 Best Practice (1 Bot per Backfill Task)**: Telegram rate limits apply per bot token. Running multiple historical backfills concurrently on the same bot token quickly triggers severe `429 Flood Wait` cooldowns (often pausing the bot for 5 to 30+ minutes). For large channel backfills, always create a separate bot token in `@BotFather` for each backfilling task to achieve uninterrupted full copy speed.
 
 > [!TIP]
 > **4. Bot Token Security**

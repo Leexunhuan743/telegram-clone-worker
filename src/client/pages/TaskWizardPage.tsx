@@ -74,6 +74,8 @@ export function TaskWizardPage({ fromSavedId }: { fromSavedId?: string }) {
   const selectedBot = bots?.find((b) => b.id === selectedBotId);
   const hasBot = !!selectedBotId || !!pendingBot;
   const wantsBackfill = scope === "live_and_backfill" || scope === "backfill_only";
+  const runningBackfillTasks = (botActiveTasks ?? []).filter((t) => t.backfill_status === "running");
+  const hasRunningBackfill = runningBackfillTasks.length > 0;
 
   function botQuery(): string {
     if (pendingBot) return `token=${encodeURIComponent(pendingBot.token)}&botTelegramId=${pendingBot.bot_id}`;
@@ -441,24 +443,64 @@ export function TaskWizardPage({ fromSavedId }: { fromSavedId?: string }) {
               <div
                 style={{
                   background: "var(--surface-raised)",
-                  border: "1px solid rgba(245, 158, 11, 0.35)",
+                  border: hasRunningBackfill
+                    ? "1px solid color-mix(in oklab, var(--warning) 50%, transparent)"
+                    : "1px solid rgba(245, 158, 11, 0.35)",
                   borderRadius: "var(--radius)",
                   padding: "12px 14px",
                   marginBottom: 10,
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                  <span style={{ fontWeight: 600, fontSize: 13, color: "var(--warning)" }}>
-                    ⚠️ Currently Active Tasks on this Bot ({botActiveTasks.length})
+                  <span
+                    style={{
+                      fontWeight: 600,
+                      fontSize: 13,
+                      color: hasRunningBackfill ? "var(--warning)" : "var(--ink)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    <span>{hasRunningBackfill ? "⚠️ Active Backfill in Progress on this Bot" : "Currently Active Tasks on this Bot"}</span>
+                    <span style={{ fontSize: 11.5, fontWeight: 500, color: "var(--muted)" }}>({botActiveTasks.length})</span>
                   </span>
-                  <span className="badge badge-warning" style={{ fontSize: 11 }}>Active Tasks</span>
+                  <span className="badge badge-warning" style={{ fontSize: 11 }}>
+                    {hasRunningBackfill ? "Backfill Active" : "Active Tasks"}
+                  </span>
                 </div>
-                <p className="text-muted" style={{ fontSize: 12, marginBottom: 10 }}>
-                  This bot is currently executing the following tasks. You can still assign new tasks to it, but high message volumes may share Telegram rate limits.
-                </p>
+
+                {hasRunningBackfill ? (
+                  <div
+                    style={{
+                      background: "color-mix(in oklab, var(--warning) 12%, transparent)",
+                      border: "1px solid color-mix(in oklab, var(--warning) 30%, transparent)",
+                      borderRadius: "var(--radius-sm)",
+                      padding: "10px 12px",
+                      marginBottom: 10,
+                      fontSize: 12,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    <p style={{ margin: "0 0 6px", color: "var(--ink)" }}>
+                      This bot is currently executing historical message copying for{" "}
+                      <strong>{runningBackfillTasks.map((t) => getTaskDisplayInfo(t).title).join(", ")}</strong>.
+                      Telegram enforces strict message rate limits per bot token. Running multiple backfills concurrently on the same bot will trigger severe <strong>Telegram Flood Wait (429)</strong> throttling, pausing all tasks for that bot.
+                    </p>
+                    <div style={{ fontWeight: 600, color: "var(--warning)" }}>
+                      💡 Recommendation: Use <strong>one dedicated bot token per backfilling task</strong> for maximum copy speed, or wait until the current backfill completes.
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-muted" style={{ fontSize: 12, marginBottom: 10 }}>
+                    This bot is currently executing the following tasks. You can still assign new tasks to it, but high message volumes may share Telegram rate limits.
+                  </p>
+                )}
+
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {botActiveTasks.map((bt) => {
                     const { title, routeText, isCustomLabel } = getTaskDisplayInfo(bt);
+                    const isBtBackfilling = bt.backfill_status === "running";
                     return (
                       <div
                         key={bt.id}
@@ -467,10 +509,14 @@ export function TaskWizardPage({ fromSavedId }: { fromSavedId?: string }) {
                           justifyContent: "space-between",
                           alignItems: "center",
                           padding: "8px 10px",
-                          background: "var(--surface)",
+                          background: isBtBackfilling
+                            ? "color-mix(in oklab, var(--warning) 10%, var(--surface))"
+                            : "var(--surface)",
                           borderRadius: "var(--radius-sm)",
                           fontSize: 12,
-                          border: "1px solid var(--border-subtle)",
+                          border: isBtBackfilling
+                            ? "1px solid color-mix(in oklab, var(--warning) 40%, transparent)"
+                            : "1px solid var(--border-subtle)",
                         }}
                       >
                         <div>
@@ -482,9 +528,15 @@ export function TaskWizardPage({ fromSavedId }: { fromSavedId?: string }) {
                           )}
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span className="badge badge-live" style={{ fontSize: 10.5 }}>
-                            {bt.live_enabled ? "Live" : "Backfill"}
-                          </span>
+                          {isBtBackfilling ? (
+                            <span className="badge badge-warning" style={{ fontSize: 10.5 }}>
+                              ⚡ Backfilling
+                            </span>
+                          ) : (
+                            <span className="badge badge-live" style={{ fontSize: 10.5 }}>
+                              {bt.live_enabled ? "Live" : "Backfill"}
+                            </span>
+                          )}
                           <span className="text-muted" style={{ fontSize: 11 }}>
                             {bt.processed} copied
                           </span>
@@ -787,6 +839,41 @@ export function TaskWizardPage({ fromSavedId }: { fromSavedId?: string }) {
                   <option value="live_and_backfill">✨ Existing + New (Catch-Up Stream)</option>
                   <option value="backfill_only">Existing only (One-time history backfill)</option>
                 </select>
+
+                {wantsBackfill && hasRunningBackfill && (
+                  <div
+                    style={{
+                      margin: "10px 0 6px",
+                      padding: "12px 14px",
+                      background: "color-mix(in oklab, var(--warning) 12%, transparent)",
+                      border: "1px solid color-mix(in oklab, var(--warning) 40%, transparent)",
+                      borderRadius: "var(--radius)",
+                      fontSize: 12.5,
+                      color: "var(--ink)",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    <div style={{ fontWeight: 700, color: "var(--warning)", marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
+                      <span>⚠️ Flood Wait Advisory: Concurrent Backfill Detected</span>
+                    </div>
+                    <p style={{ margin: "0 0 8px" }}>
+                      <strong>@{selectedBot?.bot_username ?? pendingBot?.bot_username}</strong> is already actively running a historical backfill for{" "}
+                      <strong>{runningBackfillTasks.map((t) => getTaskDisplayInfo(t).title).join(", ")}</strong>. Assigning another backfill to this same bot token will split Telegram's copy quota and trigger <strong>Telegram Flood Wait (429)</strong> throttling.
+                    </p>
+                    <ul style={{ margin: 0, paddingLeft: 18 }}>
+                      <li>
+                        <strong>Recommended:</strong> Return to Step 1 and connect a separate bot token from{" "}
+                        <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>
+                          @BotFather ↗
+                        </a>{" "}
+                        (1 bot per backfill task prevents flood waits).
+                      </li>
+                      <li style={{ marginTop: 3 }}>
+                        <strong>Alternative:</strong> Switch scope to <em>"New messages only (Live forward)"</em> if you only need upcoming messages.
+                      </li>
+                    </ul>
+                  </div>
+                )}
               </div>
 
               {wantsBackfill && (
