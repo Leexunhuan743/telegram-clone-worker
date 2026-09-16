@@ -24,6 +24,39 @@ export function isTaskPaused(t: TaskSummary): boolean {
   );
 }
 
+export interface TaskDisplayInfo {
+  title: string;
+  routeText: string;
+  isCustomLabel: boolean;
+}
+
+export function getTaskDisplayInfo(t: {
+  label?: string | null;
+  source_chat_id: string;
+  source_chat_title?: string | null;
+  dest_chat_id: string;
+  dest_chat_title?: string | null;
+}): TaskDisplayInfo {
+  const sourceText = (t.source_chat_title && t.source_chat_title.trim()) || t.source_chat_id;
+  const destText = (t.dest_chat_title && t.dest_chat_title.trim()) || t.dest_chat_id;
+  const routeText = `${sourceText} → ${destText}`;
+  const idRoute = `${t.source_chat_id} → ${t.dest_chat_id}`;
+
+  const label = (t.label ?? "").trim();
+  const isDefault =
+    !label ||
+    label === routeText ||
+    label === idRoute ||
+    label === `${sourceText} -> ${destText}` ||
+    label === `${t.source_chat_id} -> ${t.dest_chat_id}`;
+
+  return {
+    title: isDefault ? routeText : label,
+    routeText,
+    isCustomLabel: !isDefault,
+  };
+}
+
 interface TasksContextValue {
   tasks: TaskSummary[];
   activeTasks: TaskSummary[];

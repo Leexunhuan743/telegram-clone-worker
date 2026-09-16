@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { navigate, useHashRoute, type Route } from "../lib/router";
 import { api, listAllTasks } from "../lib/api";
 import { useLayout } from "./LayoutContext";
-import { useTasks } from "../lib/useTasksContext";
+import { useTasks, getTaskDisplayInfo } from "../lib/useTasksContext";
 import { useAuth } from "../lib/useAuth";
 import { AuthPage } from "../pages/AuthPage";
 import type { BotSummary, TaskSummary } from "../../shared/rpcTypes";
@@ -110,7 +110,18 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
 
   const q = query.trim().toLowerCase();
   const filteredTasks = useMemo(
-    () => (tasks ?? []).filter((t) => !q || t.label.toLowerCase().includes(q)).slice(0, 6),
+    () =>
+      (tasks ?? [])
+        .filter((t) => {
+          if (!q) return true;
+          const { title, routeText } = getTaskDisplayInfo(t);
+          return (
+            t.label.toLowerCase().includes(q) ||
+            title.toLowerCase().includes(q) ||
+            routeText.toLowerCase().includes(q)
+          );
+        })
+        .slice(0, 6),
     [tasks, q],
   );
   const filteredBots = useMemo(
@@ -169,7 +180,7 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
                 >
                   <div className="sidebar-nav-item-left">
                     <TasksIcon />
-                    <span>{t.label}</span>
+                    <span>{getTaskDisplayInfo(t).title}</span>
                   </div>
                   <span className={`badge-count ${t.live_enabled ? "live" : ""}`}>
                     {t.live_enabled ? "Live" : "Task"}

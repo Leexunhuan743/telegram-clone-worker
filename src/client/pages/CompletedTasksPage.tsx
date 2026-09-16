@@ -1,4 +1,4 @@
-import { useTasks, isTaskCompleted } from "../lib/useTasksContext";
+import { useTasks, isTaskCompleted, getTaskDisplayInfo } from "../lib/useTasksContext";
 import { navigate } from "../lib/router";
 import { PageHero } from "../components/PageHero";
 import { Badge, type BadgeVariant } from "../components/Badge";
@@ -61,6 +61,7 @@ export function CompletedTasksPage() {
 
         {completed.map((task) => {
           const { variant, label } = completedStatus(task);
+          const { title, routeText, isCustomLabel } = getTaskDisplayInfo(task);
           return (
             <div
               key={task.id}
@@ -68,15 +69,26 @@ export function CompletedTasksPage() {
               onClick={() => navigate(`task/${task.id}`)}
             >
               <div className="task-name">
-                <span>{task.label}</span>
+                <span>{title}</span>
                 <Badge variant={variant} label={label} />
               </div>
               <div className="task-detail" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <span>{task.source_chat_title ?? task.source_chat_id} → {task.dest_chat_title ?? task.dest_chat_id}</span>
-                <span>·</span>
-                <span className="pill-stat" style={{ color: "var(--success)" }}>
-                  {(task.processed ?? 0).toLocaleString()} copied
-                </span>
+                {isCustomLabel && (
+                  <>
+                    <span>{routeText}</span>
+                    <span>·</span>
+                  </>
+                )}
+                {task.scope !== "live" && (
+                  <span className="pill-stat" style={{ color: "var(--success)" }}>
+                    📦 {(task.processed ?? 0).toLocaleString()} copied
+                  </span>
+                )}
+                {task.scope !== "backfill_only" && (
+                  <span className="pill-stat" style={{ color: "var(--info)" }}>
+                    ⚡ {(task.live_processed ?? 0).toLocaleString()} live
+                  </span>
+                )}
                 <span>·</span>
                 <span>{new Date((task.created_at ?? 0) * 1000).toLocaleDateString()}</span>
               </div>

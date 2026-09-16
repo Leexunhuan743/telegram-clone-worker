@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { navigate } from "../lib/router";
-import { useTasks } from "../lib/useTasksContext";
+import { useTasks, getTaskDisplayInfo } from "../lib/useTasksContext";
 import { api } from "../lib/api";
 import { useToast } from "../components/Toast";
 import { PageHero } from "../components/PageHero";
@@ -61,7 +61,7 @@ export function PausedTasksPage() {
     try {
       const res = await api.patch<TaskSummary>(`/api/tasks/${task.id}`, patchBody);
       if (res.ok) {
-        toast.show("success", `Resumed "${task.label}"`);
+        toast.show("success", `Resumed "${getTaskDisplayInfo(task).title}"`);
         await refetch();
       } else {
         toast.show("error", res.description ?? "Failed to resume task");
@@ -188,6 +188,7 @@ export function PausedTasksPage() {
 
         {displayedTasks.map((t) => {
           const scanned = (t.processed ?? 0) + (t.failed ?? 0);
+          const { title, routeText, isCustomLabel } = getTaskDisplayInfo(t);
 
           return (
             <div
@@ -198,7 +199,7 @@ export function PausedTasksPage() {
             >
               <div className="task-name">
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                  <span>{t.label}</span>
+                  <span>{title}</span>
                   <Badge variant="paused" label="Paused" />
                   {t.live_enabled && <Badge variant="live" label="Live Active" />}
                 </div>
@@ -217,10 +218,12 @@ export function PausedTasksPage() {
               </div>
 
               <div className="task-detail" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <span>
-                  {t.source_chat_title ?? t.source_chat_id} → {t.dest_chat_title ?? t.dest_chat_id}
-                </span>
-                <span>·</span>
+                {isCustomLabel && (
+                  <>
+                    <span>{routeText}</span>
+                    <span>·</span>
+                  </>
+                )}
                 {t.scope !== "live" && (
                   <span className="pill-stat" style={{ color: "var(--success)" }}>
                     📦 {(t.processed ?? 0).toLocaleString()} copied

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { navigate } from "../lib/router";
-import { useTasks } from "../lib/useTasksContext";
+import { useTasks, getTaskDisplayInfo } from "../lib/useTasksContext";
 import { usePolling } from "../lib/usePolling";
 import { api } from "../lib/api";
 import { useToast } from "../components/Toast";
@@ -40,7 +40,7 @@ export function EmptyStatePage() {
       }
       const res = await api.patch<TaskSummary>(`/api/tasks/${task.id}`, patchBody);
       if (res.ok) {
-        toast.show("success", `Paused "${task.label}". Moved to Paused Tasks.`);
+        toast.show("success", `Paused "${getTaskDisplayInfo(task).title}". Moved to Paused Tasks.`);
         await refetch();
       } else {
         toast.show("error", res.description ?? "Failed to pause task");
@@ -183,11 +183,13 @@ export function EmptyStatePage() {
               ? Math.min(100, Math.round((((t.processed ?? 0) + (t.failed ?? 0)) / t.total) * 100))
               : 0;
 
+          const { title, routeText, isCustomLabel } = getTaskDisplayInfo(t);
+
           return (
             <div key={t.id} className="task-item" onClick={() => navigate(`task/${t.id}`)}>
               <div className="task-name">
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                  <span>{t.label}</span>
+                  <span>{title}</span>
                   {isBackfilling ? (
                     <Badge variant="running" label={`Backfilling ${percent}%`} />
                   ) : t.live_enabled ? (
@@ -211,8 +213,12 @@ export function EmptyStatePage() {
                 </button>
               </div>
               <div className="task-detail" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <span>{t.source_chat_title ?? t.source_chat_id} → {t.dest_chat_title ?? t.dest_chat_id}</span>
-                <span>·</span>
+                {isCustomLabel && (
+                  <>
+                    <span>{routeText}</span>
+                    <span>·</span>
+                  </>
+                )}
                 {t.scope !== "live" && (
                   <span className="pill-stat" style={{ color: "var(--success)" }}>
                     📦 {(t.processed ?? 0).toLocaleString()} copied

@@ -6,6 +6,7 @@ import { PageHero } from "../components/PageHero";
 import { CapabilityChecklist } from "../components/CapabilityChecklist";
 import { PermissionErrorBanner } from "../components/PermissionErrorBanner";
 import { navigate } from "../lib/router";
+import { getTaskDisplayInfo } from "../lib/useTasksContext";
 import type {
   BotSummary,
   BotVerifyResult,
@@ -377,36 +378,41 @@ export function TaskWizardPage({ fromSavedId }: { fromSavedId?: string }) {
                   This bot is currently executing the following tasks. You can still assign new tasks to it, but high message volumes may share Telegram rate limits.
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {botActiveTasks.map((bt) => (
-                    <div
-                      key={bt.id}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "8px 10px",
-                        background: "var(--surface)",
-                        borderRadius: "var(--radius-sm)",
-                        fontSize: 12,
-                        border: "1px solid var(--border-subtle)",
-                      }}
-                    >
-                      <div>
-                        <strong style={{ color: "var(--ink)" }}>{bt.label}</strong>
-                        <span className="text-muted" style={{ marginLeft: 8 }}>
-                          {bt.source_chat_title ?? bt.source_chat_id} → {bt.dest_chat_title ?? bt.dest_chat_id}
-                        </span>
+                  {botActiveTasks.map((bt) => {
+                    const { title, routeText, isCustomLabel } = getTaskDisplayInfo(bt);
+                    return (
+                      <div
+                        key={bt.id}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "8px 10px",
+                          background: "var(--surface)",
+                          borderRadius: "var(--radius-sm)",
+                          fontSize: 12,
+                          border: "1px solid var(--border-subtle)",
+                        }}
+                      >
+                        <div>
+                          <strong style={{ color: "var(--ink)" }}>{title}</strong>
+                          {isCustomLabel && (
+                            <span className="text-muted" style={{ marginLeft: 8 }}>
+                              {routeText}
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span className="badge badge-live" style={{ fontSize: 10.5 }}>
+                            {bt.live_enabled ? "Live" : "Backfill"}
+                          </span>
+                          <span className="text-muted" style={{ fontSize: 11 }}>
+                            {bt.processed} copied
+                          </span>
+                        </div>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span className="badge badge-live" style={{ fontSize: 10.5 }}>
-                          {bt.live_enabled ? "Live" : "Backfill"}
-                        </span>
-                        <span className="text-muted" style={{ fontSize: 11 }}>
-                          {bt.processed} copied
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

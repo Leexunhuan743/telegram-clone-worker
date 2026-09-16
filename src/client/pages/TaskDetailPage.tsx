@@ -6,7 +6,7 @@ import { PageHero } from "../components/PageHero";
 import { Badge } from "../components/Badge";
 import { PermissionErrorBanner } from "../components/PermissionErrorBanner";
 import { navigate } from "../lib/router";
-import { useTasks } from "../lib/useTasksContext";
+import { useTasks, getTaskDisplayInfo } from "../lib/useTasksContext";
 import { formatBytes, getMediaIcon } from "../../shared/messageFilter";
 import type { TaskDetail, TaskScope, TaskSummary } from "../../shared/rpcTypes";
 
@@ -184,9 +184,12 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
     );
   }
 
+  const displayInfo = task ? getTaskDisplayInfo(task) : null;
+  const displayTitle = displayInfo?.title ?? task?.label ?? "";
+
   async function removeTask() {
     if (!task) return;
-    if (!confirm(`Delete task "${task.label}"? This can't be undone.`)) return;
+    if (!confirm(`Delete task "${displayTitle}"? This can't be undone.`)) return;
     const res = await api.del(`/api/tasks/${taskId}`);
     if (res.ok) {
       toast.show("success", "Task deleted");
@@ -202,7 +205,7 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
       <PageHero
         title={
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <span>{task.label}</span>
+            <span>{displayTitle}</span>
             {task.stop_reason ? (
               <Badge variant="failed" label="Stopped" />
             ) : task.scope === "live_and_backfill" ? (
@@ -514,7 +517,7 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
                   className="input"
                   value={editLabel}
                   onChange={(e) => setEditLabel(e.target.value)}
-                  placeholder="Task Name / Label"
+                  placeholder={displayInfo?.routeText || "Task Name / Label"}
                 />
               </div>
 
