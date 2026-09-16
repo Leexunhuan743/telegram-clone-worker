@@ -145,10 +145,14 @@ Deploy your own instance of Telegram Clone Worker with a single click:
    - Fork/clone this repository to your account.
    - Provision a new **Cloudflare D1 database** (`telegram-clone-worker-db`).
    - Deploy the Worker and static assets.
-4. **Zero-Config Database Initialization**:
+4. **Default Worker URL & Domain Enabled**:
+   - The deployment configuration specifies `"workers_dev": true`, ensuring your public Worker URL (`https://telegram-clone-worker.<your-subdomain>.workers.dev`) is enabled and accessible by default upon deployment.
+   - If your Cloudflare account had `workers.dev` domains toggled off, deploying automatically enables the route so you receive an active link immediately.
+   - You can also bind your own custom domain at any time in Cloudflare under **Workers & Pages > telegram-clone-worker > Settings > Domains & Routes**.
+5. **Zero-Config Database Initialization**:
    - The worker features an automatic bootstrap engine ([`src/db/bootstrap.ts`](file:///C:/Users/LiquidX/Documents/Snoop%20and%20Conf/project%20bot%20access/src/db/bootstrap.ts)).
    - When you visit your deployed worker URL for the first time, all tables and indexes are created automatically. You do **not** need to run any manual terminal migration commands!
-5. **Configuring Admin Password (Optional)**:
+6. **Configuring Admin Password (Optional)**:
    - **Via Cloudflare Dashboard**: Go to **Workers & Pages > telegram-clone-worker > Settings > Variables and Secrets**, and add a secret named `ADMIN_PASSWORD`. When set, the console strictly requires this password to log in.
    - **Via CLI**: Run `npx wrangler secret put ADMIN_PASSWORD` in your terminal.
    - **Via Browser**: If you do not configure `ADMIN_PASSWORD`, opening the console for the first time will ask if you want to set an admin password or proceed with open access. You can protect or unprotect your console at any time.
