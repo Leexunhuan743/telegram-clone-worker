@@ -152,8 +152,8 @@ Deploy your own instance of Telegram Clone Worker with a single click:
      2. Click the **Domains** tab in the top navigation bar (or click **Domains and routes →** on the right sidebar).
      3. Under the **workers.dev** section, click **Enable**.
      4. Your Worker URL is now live (`https://telegram-clone-worker.<your-subdomain>.workers.dev`).
-     5. This is a **one-time step** — all future code pushes, automatic weekly syncs, and updates will remain permanently live at this URL!
-   - *(Optional)* You can also click **Add custom domain** in the same **Domains** tab to serve the application on your own branded domain (e.g. `clone.yourdomain.com`).
+      5. This is a **one-time step** — all future code pushes and updates will remain permanently live at this URL!
+    - *(Optional)* You can also click **Add custom domain** in the same **Domains** tab to serve the application on your own branded domain (e.g. `clone.yourdomain.com`).
 5. **Zero-Config Database Initialization**:
    - The worker features an automatic bootstrap engine ([`src/db/bootstrap.ts`](file:///C:/Users/LiquidX/Documents/Snoop%20and%20Conf/project%20bot%20access/src/db/bootstrap.ts)).
    - When you visit your deployed worker URL for the first time, all tables and indexes are created automatically. You do **not** need to run any manual terminal migration commands!
@@ -161,11 +161,19 @@ Deploy your own instance of Telegram Clone Worker with a single click:
    - **Via Cloudflare Dashboard**: Go to **Workers & Pages > telegram-clone-worker > Settings > Variables and Secrets**, and add a secret named `ADMIN_PASSWORD`. When set, the console strictly requires this password to log in.
    - **Via CLI**: Run `npx wrangler secret put ADMIN_PASSWORD` in your terminal.
    - **Via Browser**: If you do not configure `ADMIN_PASSWORD`, opening the console for the first time will ask if you want to set an admin password or proceed with open access. You can protect or unprotect your console at any time.
-7. **Automated Weekly Updates (Auto-Sync & Deploy)**:
-   - Your newly created repository includes a built-in GitHub Action ([`sync-upstream.yml`](.github/workflows/sync-upstream.yml)) that automatically checks for upstream updates every Sunday at 00:00 UTC.
-   - When new features or bug fixes are released, the workflow pulls the latest code from `iamLiquidX/telegram-clone-worker` and pushes to your `main` branch.
-   - Because Cloudflare Workers Builds is connected to your repository, Cloudflare immediately builds and deploys the updates to your active Worker URL without any manual intervention!
-   - **Manual 1-Click Update**: You can also update instantly at any time from your GitHub repository by going to **Actions > Weekly Upstream Auto-Sync > Run workflow**.
+
+---
+
+## Updating Your Deployment
+
+When new features or bug fixes are released upstream, you can update your deployment in seconds:
+
+```bash
+git pull https://github.com/iamLiquidX/telegram-clone-worker.git main
+git push origin main
+```
+
+Because Cloudflare Workers Builds is connected to your repository, pushing to `main` automatically triggers Cloudflare to build and redeploy the latest version to your live URL!
 
 ---
 
