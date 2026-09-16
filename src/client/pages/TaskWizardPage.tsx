@@ -25,13 +25,20 @@ export function TaskWizardPage({ fromSavedId }: { fromSavedId?: string }) {
 
   // Step 1: bot
   const [selectedBotId, setSelectedBotId] = useState<string>("");
-  const [addingBot, setAddingBot] = useState(false);
   const [newToken, setNewToken] = useState("");
   const [botError, setBotError] = useState<string | null>(null);
   const [savingBot, setSavingBot] = useState(false);
   const [pendingBot, setPendingBot] = useState<{ token: string; bot_id: number; bot_username: string } | null>(null);
   const [botActiveTasks, setBotActiveTasks] = useState<TaskSummary[] | null>(null);
   const [loadingBotTasks, setLoadingBotTasks] = useState(false);
+
+  function handleClearBot() {
+    setSelectedBotId("");
+    setPendingBot(null);
+    setBotActiveTasks(null);
+    setNewToken("");
+    setBotError(null);
+  }
 
   // Step 2: source chat
   const [sourceChatId, setSourceChatId] = useState("");
@@ -77,6 +84,8 @@ export function TaskWizardPage({ fromSavedId }: { fromSavedId?: string }) {
     setSelectedBotId(botId);
     setPendingBot(null);
     setBotActiveTasks(null);
+    setNewToken("");
+    setBotError(null);
     if (!botId) return;
     setLoadingBotTasks(true);
     const res = await api.get<TaskSummary[]>(`/api/bots/${botId}/tasks`);
@@ -100,7 +109,6 @@ export function TaskWizardPage({ fromSavedId }: { fromSavedId?: string }) {
         return;
       }
       const s = res.data;
-      setAddingBot(true);
       setNewToken(s.bot_token);
       setSourceChatId(s.source_chat_id);
       setDestChatId(s.dest_chat_id);
@@ -129,18 +137,18 @@ export function TaskWizardPage({ fromSavedId }: { fromSavedId?: string }) {
   }, [fromSavedId]);
 
   async function verifyNewBot() {
+    if (!newToken.trim()) return;
     setBotError(null);
     setSavingBot(true);
-    const res = await api.post<BotVerifyResult>("/api/bots/verify", { token: newToken });
+    const res = await api.post<BotVerifyResult>("/api/bots/verify", { token: newToken.trim() });
     setSavingBot(false);
     if (!res.ok) {
       setBotError(res.description);
       return;
     }
     toast.show("success", `Verified @${res.data.bot_username}`);
-    setAddingBot(false);
     setSelectedBotId("");
-    setPendingBot({ token: newToken, bot_id: res.data.bot_id, bot_username: res.data.bot_username });
+    setPendingBot({ token: newToken.trim(), bot_id: res.data.bot_id, bot_username: res.data.bot_username });
     setBotActiveTasks(res.data.active_tasks ?? []);
     setNewToken("");
   }
@@ -306,56 +314,127 @@ export function TaskWizardPage({ fromSavedId }: { fromSavedId?: string }) {
           {hasBot && <span className="badge badge-live">Connected</span>}
         </div>
 
-        {!addingBot ? (
-          <>
-            <div className="field">
-              <label>Bot</label>
-              <select
-                className="input"
-                value={selectedBotId}
-                onChange={(e) => handleSelectBot(e.target.value)}
+        {!hasBot ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* Primary: Add Telegram Bot Token (Always on top) */}
+            <div>
+              <div className="field" style={{ marginBottom: 6 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <label style={{ margin: 0, fontWeight: 600 }}>Telegram Bot Token</label>
+                  <a
+                    href="https://t.me/BotFather"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ fontSize: 11.5, color: "var(--accent)", textDecoration: "none" }}
+                  >
+                    Get token from @BotFather ↗
+                  </a>
+                </div>
+                <input
+                  className="input"
+                  value={newToken}
+                  onChange={(e) => setNewToken(e.target.value)}
+                  placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ…"
+                  type="password"
+                  autoFocus={!fromSavedId}
+                />
+              </div>
+              <p className="text-muted" style={{ fontSize: 12, marginBottom: 10 }}>
+                Token is verified directly with Telegram API to check permissions, bot username, and active workloads.
+              </p>
+              {botError && (
+                <div style={{ marginBottom: 10 }}>
+                  <PermissionErrorBanner reason="unknown" description={botError} />
+                </div>
+              )}
+              <button
+                className="btn btn-primary"
+                disabled={!newToken.trim() || savingBot}
+                onClick={verifyNewBot}
               >
-                <option value="">Select an existing bot…</option>
-                {bots?.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.label} (@{b.bot_username})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <button className="btn btn-secondary btn-sm" onClick={() => setAddingBot(true)}>
-              + Add new bot token
-            </button>
-          </>
-        ) : (
-          <>
-            <div className="field">
-              <label>Bot token</label>
-              <input
-                className="input"
-                value={newToken}
-                onChange={(e) => setNewToken(e.target.value)}
-                placeholder="123456:AA…"
-                type="password"
-              />
-            </div>
-            <p className="text-muted" style={{ fontSize: 12, marginBottom: 8 }}>
-              Token is only stored once you create a task. Verifying checks username, permissions, and active workload.
-            </p>
-            {botError && <PermissionErrorBanner reason="unknown" description={botError} />}
-            <div className="row" style={{ marginTop: 8 }}>
-              <button className="btn btn-primary" disabled={!newToken || savingBot} onClick={verifyNewBot}>
-                {savingBot ? "Verifying…" : "Verify & connect"}
-              </button>
-              <button className="btn btn-secondary" onClick={() => setAddingBot(false)}>
-                Cancel
+                {savingBot ? "Verifying with Telegram…" : "Verify & Connect Bot"}
               </button>
             </div>
-          </>
-        )}
 
-        {(selectedBot || pendingBot) && (
-          <div style={{ marginTop: 14 }}>
+            {/* Secondary: Choose from Existing Bots (ONLY if bots exist) */}
+            {bots && bots.length > 0 && (
+              <div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    margin: "6px 0 14px",
+                    color: "var(--text-dim)",
+                    fontSize: 11.5,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    fontWeight: 600,
+                  }}
+                >
+                  <div style={{ flex: 1, height: 1, background: "var(--border-subtle)" }} />
+                  <span>or choose from existing bots ({bots.length})</span>
+                  <div style={{ flex: 1, height: 1, background: "var(--border-subtle)" }} />
+                </div>
+
+                <div className="field" style={{ marginBottom: 0 }}>
+                  <label>Select Saved Bot</label>
+                  <select
+                    className="input"
+                    value={selectedBotId}
+                    onChange={(e) => handleSelectBot(e.target.value)}
+                  >
+                    <option value="">Choose a previously saved bot…</option>
+                    {bots.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.label} (@{b.bot_username})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Connected Bot summary card */
+          <div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "12px 16px",
+                background: "var(--surface-raised)",
+                border: "1px solid color-mix(in oklab, var(--success) 35%, transparent)",
+                borderRadius: "var(--radius)",
+                marginBottom: 12,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ fontSize: 24 }}>🤖</span>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: "var(--ink)" }}>
+                    @{selectedBot?.bot_username ?? pendingBot?.bot_username}
+                    {selectedBot && (
+                      <span className="text-muted" style={{ fontWeight: 400, marginLeft: 8, fontSize: 13 }}>
+                        ({selectedBot.label})
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 2 }}>
+                    {pendingBot ? "Verified new bot token (will be saved when task starts)" : "Saved bot connected"}
+                  </div>
+                </div>
+              </div>
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={handleClearBot}
+                title="Choose a different bot"
+              >
+                Change Bot
+              </button>
+            </div>
+
             {loadingBotTasks && <div className="skeleton-row" style={{ height: 36 }} />}
 
             {!loadingBotTasks && botActiveTasks !== null && botActiveTasks.length > 0 && (
@@ -428,7 +507,6 @@ export function TaskWizardPage({ fromSavedId }: { fromSavedId?: string }) {
                   alignItems: "center",
                   gap: 8,
                   fontSize: 12.5,
-                  marginBottom: 10,
                 }}
               >
                 <span style={{ color: "var(--success)", fontWeight: 700 }}>✓</span>
@@ -437,11 +515,6 @@ export function TaskWizardPage({ fromSavedId }: { fromSavedId?: string }) {
                 </span>
               </div>
             )}
-
-            <p className="text-muted" style={{ fontSize: 12 }}>
-              Connected as <strong>@{selectedBot?.bot_username ?? pendingBot?.bot_username}</strong>
-              {pendingBot && " (will be saved when task starts)"}
-            </p>
           </div>
         )}
       </div>
