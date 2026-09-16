@@ -145,10 +145,15 @@ Deploy your own instance of Telegram Clone Worker with a single click:
    - Fork/clone this repository to your account.
    - Provision a new **Cloudflare D1 database** (`telegram-clone-worker-db`).
    - Deploy the Worker and static assets.
-4. **Default Worker URL & Domain Enabled**:
-   - The deployment configuration specifies `"workers_dev": true`, ensuring your public Worker URL (`https://telegram-clone-worker.<your-subdomain>.workers.dev`) is enabled and accessible by default upon deployment.
-   - If your Cloudflare account had `workers.dev` domains toggled off, deploying automatically enables the route so you receive an active link immediately.
-   - You can also bind your own custom domain at any time in Cloudflare under **Workers & Pages > telegram-clone-worker > Settings > Domains & Routes**.
+4. **Activate Your Worker URL (One-time, 1-Click in Cloudflare Dashboard)**:
+   - When Cloudflare creates a new Worker from a connected Git repository, it allocates your unique subdomain (`telegram-clone-worker.<your-subdomain>.workers.dev`) with the route initially set to *Disabled* by default for safety.
+   - To activate your public URL:
+     1. In your Cloudflare Dashboard, open **Workers & Pages** and click **`telegram-clone-worker`**.
+     2. Click the **Domains** tab in the top navigation bar (or click **Domains and routes →** on the right sidebar).
+     3. Under the **workers.dev** section, click **Enable**.
+     4. Your Worker URL is now live (`https://telegram-clone-worker.<your-subdomain>.workers.dev`).
+     5. This is a **one-time step** — all future code pushes, automatic weekly syncs, and updates will remain permanently live at this URL!
+   - *(Optional)* You can also click **Add custom domain** in the same **Domains** tab to serve the application on your own branded domain (e.g. `clone.yourdomain.com`).
 5. **Zero-Config Database Initialization**:
    - The worker features an automatic bootstrap engine ([`src/db/bootstrap.ts`](file:///C:/Users/LiquidX/Documents/Snoop%20and%20Conf/project%20bot%20access/src/db/bootstrap.ts)).
    - When you visit your deployed worker URL for the first time, all tables and indexes are created automatically. You do **not** need to run any manual terminal migration commands!
