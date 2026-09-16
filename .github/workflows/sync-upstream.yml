@@ -1,0 +1,46 @@
+name: Weekly Upstream Auto-Sync
+
+on:
+  schedule:
+    # Runs automatically every Sunday at midnight (00:00 UTC)
+    - cron: '0 0 * * 0'
+  workflow_dispatch: # Allows manual 1-click updates anytime
+
+permissions:
+  contents: write
+
+jobs:
+  sync-upstream:
+    name: Sync with Upstream
+    runs-on: ubuntu-latest
+    # Do not run on the primary upstream repository
+    if: github.repository != 'iamLiquidX/telegram-clone-worker'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fetch upstream changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/iamLiquidX/telegram-clone-worker.git
+          git fetch upstream main
+
+      - name: Check and merge updates
+        id: merge
+        run: |
+          git checkout main
+          BEHIND_COUNT=$(git rev-list --count HEAD..upstream/main)
+          echo "behind_count=$BEHIND_COUNT"
+          
+          if [ "$BEHIND_COUNT" -gt 0 ]; then
+            echo "Found $BEHIND_COUNT new commit(s) from upstream. Merging..."
+            git merge upstream/main --ff-only || git merge upstream/main -m "chore(sync): automated weekly sync with upstream telegram-clone-worker"
+            git push origin main
+            echo "Successfully synced and pushed to main. Cloudflare will automatically build and deploy the update."
+          else
+            echo "Repository is already up to date with upstream. No push needed."
+          fi
