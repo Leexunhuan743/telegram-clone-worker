@@ -80,7 +80,7 @@ export async function handleVerifyBot(request: Request, env: Env): Promise<Respo
 
 /** Persists a verified token as a bot row.
  * Only called once something durable actually needs the bot to exist (e.g. task creation).
- * Note: Webhook is activated in handleCreateTask only if wantsLive is true. */
+ * Live updates are polled via getUpdates in scheduled cron (no webhooks). */
 export async function createBotRecord(env: Env, _origin: string, token: string, label?: string): Promise<Result<BotSummary>> {
   const client = new TelegramClient(token);
   return toResult(async () => {
