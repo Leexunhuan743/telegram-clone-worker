@@ -28,6 +28,13 @@ import {
 } from "./routes/api/savedTasks";
 import { runTick } from "./jobs/tick";
 import { ensureDatabaseBootstrap } from "./db/bootstrap";
+import {
+  authenticateApiRequest,
+  handleAuthLogin,
+  handleAuthRemove,
+  handleAuthSetup,
+  handleAuthStatus,
+} from "./auth/handler";
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json" } });
@@ -40,6 +47,33 @@ export default {
 
     if (parts[0] === "api") {
       await ensureDatabaseBootstrap(env.DB);
+
+      // Public health check
+      if (parts[1] === "health") {
+        return json({ ok: true, data: { status: "up" } });
+      }
+
+      // Public authentication routes
+      if (parts[1] === "auth") {
+        if (parts[2] === "status" && request.method === "GET") {
+          return handleAuthStatus(request, env);
+        }
+        if (parts[2] === "login" && request.method === "POST") {
+          return handleAuthLogin(request, env);
+        }
+        if (parts[2] === "setup" && request.method === "POST") {
+          return handleAuthSetup(request, env);
+        }
+        if (parts[2] === "remove" && request.method === "POST") {
+          return handleAuthRemove(request, env);
+        }
+        return json({ ok: false, errorCode: 404, description: "not found", reason: "invalid_request" }, 404);
+      }
+
+      // Protect all remaining /api/* endpoints
+      const authError = await authenticateApiRequest(request, env);
+      if (authError) return authError;
+
       const botId = url.searchParams.get("botId") ?? "";
       const botToken = url.searchParams.get("token") ?? "";
       const botTelegramId = url.searchParams.get("botTelegramId") ?? "";
@@ -154,10 +188,6 @@ export default {
       if (parts[1] === "saved-tasks" && parts.length === 3) {
         if (request.method === "GET") return handleGetSavedTask(env, parts[2]);
         if (request.method === "DELETE") return handleDeleteSavedTask(env, parts[2]);
-      }
-
-      if (parts[1] === "health") {
-        return json({ ok: true, data: { status: "up" } });
       }
 
       return json({ ok: false, errorCode: 404, description: "not found", reason: "invalid_request" }, 404);

@@ -12,6 +12,13 @@ export async function ensureDatabaseBootstrap(db: D1Database): Promise<void> {
   if (bootstrapDone) return;
 
   try {
+    // Ensure app_settings table always exists
+    await db.prepare(`CREATE TABLE IF NOT EXISTS app_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      created_at INTEGER NOT NULL DEFAULT (unixepoch())
+    )`).run();
+
     const existing = await db
       .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'tasks'")
       .first<{ name: string }>();
@@ -23,6 +30,11 @@ export async function ensureDatabaseBootstrap(db: D1Database): Promise<void> {
 
     // New or uninitialized database: provision all tables and indexes in a single atomic batch
     await db.batch([
+      db.prepare(`CREATE TABLE IF NOT EXISTS app_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        created_at INTEGER NOT NULL DEFAULT (unixepoch())
+      )`),
       db.prepare(`CREATE TABLE IF NOT EXISTS bots (
         id TEXT PRIMARY KEY,
         token TEXT NOT NULL,

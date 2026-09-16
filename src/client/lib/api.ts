@@ -1,11 +1,56 @@
-import type { BotSummary, Result, TaskSummary } from "../../shared/rpcTypes";
+import type { Result, TaskSummary } from "../../shared/rpcTypes";
+
+const AUTH_TOKEN_KEY = "tg_auth_token";
+
+export function getAuthToken(): string | null {
+  try {
+    return localStorage.getItem(AUTH_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setAuthToken(token: string): void {
+  try {
+    localStorage.setItem(AUTH_TOKEN_KEY, token);
+  } catch {
+    // ignore
+  }
+}
+
+export function clearAuthToken(): void {
+  try {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+  } catch {
+    // ignore
+  }
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<Result<T>> {
   try {
+    const token = getAuthToken();
+    const headers: Record<string, string> = {
+      "content-type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...((init?.headers as Record<string, string>) ?? {}),
+    };
+
     const res = await fetch(path, {
       ...init,
-      headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
+      headers,
     });
+
+    if (res.status === 401 && !path.startsWith("/api/auth/login")) {
+      clearAuthToken();
+      window.dispatchEvent(new CustomEvent("tg_auth_unauthorized"));
+      return {
+        ok: false,
+        errorCode: 401,
+        description: "Authentication session expired or invalid",
+        reason: "unauthorized",
+      };
+    }
+
     const body = (await res.json()) as Result<T>;
     return body;
   } catch (e) {

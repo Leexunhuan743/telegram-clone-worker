@@ -149,3 +149,18 @@ export interface SavedTaskSummary {
 export interface SavedTaskWithToken extends SavedTaskSummary {
   bot_token: string;
 }
+
+// Authentication
+
+export type AuthMode = "enforced" | "open";
+export type AuthSource = "env" | "d1" | "none";
+
+export interface AuthStatusResponse {
+  mode: AuthMode;
+  source: AuthSource;
+  authenticated: boolean;
+}
+
+export interface AuthLoginResponse {
+  token: string;
+}

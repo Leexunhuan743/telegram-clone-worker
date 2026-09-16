@@ -3,6 +3,8 @@ import { navigate, useHashRoute, type Route } from "../lib/router";
 import { api, listAllTasks } from "../lib/api";
 import { useLayout } from "./LayoutContext";
 import { useTasks } from "../lib/useTasksContext";
+import { useAuth } from "../lib/useAuth";
+import { AuthPage } from "../pages/AuthPage";
 import type { BotSummary, TaskSummary } from "../../shared/rpcTypes";
 
 type Section = "tasks" | "paused" | "completed" | "add" | "bots" | "saved" | null;
@@ -202,6 +204,8 @@ export function AppNav() {
   const route = useHashRoute();
   const section = sectionOf(route);
   const { sidebarCollapsed, drawerOpen, toggleSidebar, setDrawerOpen } = useLayout();
+  const { mode, source, logout } = useAuth();
+  const [showSetupModal, setShowSetupModal] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const { liveCount: liveTaskCount, pausedCount: pausedTaskCount, completedCount: completedTaskCount } = useTasks();
 
@@ -370,6 +374,59 @@ export function AppNav() {
               </a>
             </div>
           </div>
+
+          {/* Authentication Status & Actions */}
+          <div className="sidebar-auth-card">
+            <div className="sidebar-auth-row">
+              <div className={`sidebar-auth-status ${mode === "enforced" ? "is-locked" : "is-open"}`}>
+                {mode === "enforced" ? (
+                  <>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                    <span>{source === "env" ? "Env Secured" : "Secured"}</span>
+                  </>
+                ) : (
+                  <>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                    <span>Unprotected</span>
+                  </>
+                )}
+              </div>
+
+              {mode === "enforced" ? (
+                <button
+                  type="button"
+                  className="sidebar-auth-btn"
+                  onClick={() => logout()}
+                  title="Log out from admin console"
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                  </svg>
+                  <span>Log Out</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="sidebar-auth-btn"
+                  onClick={() => setShowSetupModal(true)}
+                  title="Protect console with password"
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                  <span>Protect</span>
+                </button>
+              )}
+            </div>
+          </div>
         </nav>
       </aside>
 
@@ -402,6 +459,10 @@ export function AppNav() {
       </nav>
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+
+      {showSetupModal && (
+        <AuthPage mode="setup" onCancel={() => setShowSetupModal(false)} />
+      )}
     </>
   );
 }
