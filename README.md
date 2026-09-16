@@ -29,6 +29,22 @@ Whether you need to migrate an archive of 100,000+ historical media files, maint
 
 ---
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/images/dashboard.png" alt="Telegram Clone Worker - Active Tasks Dashboard" width="100%" />
+</p>
+<p align="center"><em>Real-time dashboard tracking active pipelines, messages copied counter, and multi-bot metrics.</em></p>
+
+<br />
+
+<p align="center">
+  <img src="docs/images/task_detail.png" alt="Telegram Clone Worker - Pipeline Execution & Task Specification" width="100%" />
+</p>
+<p align="center"><em>Granular task view showing backfill progress, live auto-sync polling status, and channel bindings.</em></p>
+
+---
+
 ## Key Features
 
 ### 🚀 High-Throughput Backfill Engine
@@ -126,10 +142,13 @@ flowchart LR
 > - Never commit bot tokens into Git or publish your D1 database dumps publicly.
 
 > [!NOTE]
-> **5. Cloudflare Free Tier Boundaries**
-> - **Cloudflare Workers Free Plan**: Includes 100,000 requests/day and 10ms CPU time per request.
-> - **Cloudflare D1 Free Plan**: Includes 5,000,000 read rows/day and 100,000 write rows/day.
-> - Telegram Clone Worker is optimized for minimal D1 scan amplification, making it 100% free-tier compatible under normal continuous operation.
+> **5. Cloudflare Free Tier Boundaries & D1 Resource Usage (50 Bots / Day)**
+> - **Cloudflare Workers Free Plan**: Includes 100,000 requests/day and 10ms CPU time per request (Worker cron uses only 1,440 invocations/day = 1.4%).
+> - **Cloudflare D1 Free Plan**: Includes **5,000,000 read rows/day** and **100,000 write rows/day**.
+> - **50 Bots Read Consumption**: At 1-minute cron intervals (1,440 ticks/day), listing active tasks (~50 rows) and fetching bot secrets (50 point-lookups) consumes ~100 rows per tick = **~144,000 reads/day** (uses only **2.88%** of your 5M free daily read limit).
+> - **50 Bots Write Consumption**:
+>   - **Live Auto-Sync**: Consumes 0 writes when chats are idle; ~3 to 4 writes per delivered message (e.g. 2,000 messages/day across 50 channels = **~7,000 writes/day**, or **7%** of the free write limit).
+>   - **Active Historical Backfill**: Each active backfilling bot consumes ~4 writes per 60-message batch (~5,830 writes/day). On the **100% Free Plan**, you can run up to **15 bots backfilling simultaneously 24/7** (~1.3M messages/day). If all 50 bots backfill 24/7 (~4.3M messages/day), D1 writes reach ~291k/day, costing only ~$0.19/day on the Cloudflare Workers Paid plan.
 
 ---
 
