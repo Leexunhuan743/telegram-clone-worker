@@ -9,7 +9,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "telegram-clone-worker-db"
+      "database_name": "telegram-clone-worker-db",
+      "database_id": "0f8ea236-7091-4fcd-a329-75f2154fc0ed"
     }
   ],
   "triggers": {
