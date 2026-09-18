@@ -959,6 +959,17 @@ select.input:focus {
   background: color-mix(in oklab, var(--danger) 22%, transparent);
 }
 
+.btn-warning {
+  background: color-mix(in oklab, var(--warning) 16%, transparent);
+  color: var(--warning);
+  border: 1px solid color-mix(in oklab, var(--warning) 38%, transparent);
+}
+
+.btn-warning:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--warning) 26%, transparent);
+  border-color: var(--warning);
+}
+
 .btn-sm {
   padding: 7px 13px;
   font-size: 12px;

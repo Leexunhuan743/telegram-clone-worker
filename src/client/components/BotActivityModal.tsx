@@ -251,7 +251,15 @@ export function BotActivityModal({
                       className="btn btn-warning btn-sm"
                       disabled={disconnecting}
                       onClick={handleDisconnectWebhook}
-                      style={{ whiteSpace: "nowrap", flexShrink: 0 }}
+                      style={{
+                        whiteSpace: "nowrap",
+                        flexShrink: 0,
+                        background: "rgba(245, 158, 11, 0.16)",
+                        color: "var(--warning, #f59e0b)",
+                        border: "1px solid rgba(245, 158, 11, 0.4)",
+                        fontWeight: 600,
+                        cursor: disconnecting ? "not-allowed" : "pointer",
+                      }}
                     >
                       {disconnecting ? "Disconnecting…" : "🔌 Disconnect Webhook"}
                     </button>
