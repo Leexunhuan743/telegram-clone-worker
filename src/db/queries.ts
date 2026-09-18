@@ -638,6 +638,45 @@ export async function pauseBotForRateLimit(db: D1Database, botId: string, until:
     .run();
 }
 
+export interface BotRateLimitStats {
+  is_cooling_down: boolean;
+  cooldown_until: number | null;
+  cooldown_seconds_remaining: number;
+  events_last_24h: number;
+}
+
+export async function getBotRateLimitStats(db: D1Database, botId: string): Promise<BotRateLimitStats> {
+  const now = Math.floor(Date.now() / 1000);
+
+  const cooldownRow = await db
+    .prepare(
+      `SELECT MAX(rate_limited_until) as max_until
+       FROM tasks
+       WHERE bot_id = ? AND rate_limited_until > ?`,
+    )
+    .bind(botId, now)
+    .first<{ max_until: number | null }>();
+
+  const maxUntil = cooldownRow?.max_until ?? null;
+
+  const historyRow = await db
+    .prepare(
+      `SELECT COUNT(*) as c
+       FROM task_activity_log tal
+       JOIN tasks t ON t.id = tal.task_id
+       WHERE t.bot_id = ? AND tal.detail LIKE '%rate limited%' AND tal.at >= ?`,
+    )
+    .bind(botId, now - 86400)
+    .first<{ c: number }>();
+
+  return {
+    is_cooling_down: maxUntil !== null && maxUntil > now,
+    cooldown_until: maxUntil,
+    cooldown_seconds_remaining: maxUntil ? Math.max(0, maxUntil - now) : 0,
+    events_last_24h: historyRow?.c ?? 0,
+  };
+}
+
 /** Releases a task's lease so a still-waiting concurrent tick (or the very
  * next one) doesn't have to wait out the TTL. Safe to call unconditionally
  * from a `finally` — a no-op if the task was deleted or never leased. */

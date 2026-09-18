@@ -53,11 +53,21 @@ export class TelegramClient {
     });
   }
 
-  deleteWebhook(): Promise<true> {
-    return this.call("deleteWebhook", { drop_pending_updates: false });
+  deleteWebhook(dropPendingUpdates = false): Promise<true> {
+    return this.call("deleteWebhook", { drop_pending_updates: dropPendingUpdates });
   }
 
-  getWebhookInfo(): Promise<{ url: string; last_error_message?: string; pending_update_count: number }> {
+  getWebhookInfo(): Promise<{
+    url: string;
+    has_custom_certificate?: boolean;
+    pending_update_count: number;
+    ip_address?: string;
+    last_error_date?: number;
+    last_error_message?: string;
+    last_synchronization_error_date?: number;
+    max_connections?: number;
+    allowed_updates?: string[];
+  }> {
     return this.call("getWebhookInfo");
   }
 

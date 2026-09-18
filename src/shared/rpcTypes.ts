@@ -1,3 +1,5 @@
+import type { ParsedBotActivity } from "./updateParser";
+
 export type ErrorReason =
   | "insufficient_permissions"
   | "bot_not_in_chat"
@@ -24,6 +26,21 @@ export interface BotSummary {
   created_at: number;
 }
 
+export interface BotWebhookDiagnostics {
+  is_active: boolean;
+  url?: string;
+  pending_update_count: number;
+  last_error_message?: string;
+  last_error_date?: number;
+}
+
+export interface BotRateLimitDiagnostics {
+  is_cooling_down: boolean;
+  cooldown_seconds_remaining: number;
+  cooldown_until: number | null;
+  events_last_24h: number;
+}
+
 /** Result of a token check — see handleVerifyBot. */
 export interface BotVerifyResult {
   bot_id: number;
@@ -31,6 +48,24 @@ export interface BotVerifyResult {
   existing_bot_id: string | null;
   active_tasks: TaskSummary[];
   total_tasks_count: number;
+  webhook_info?: BotWebhookDiagnostics;
+  rate_limit_info?: BotRateLimitDiagnostics;
+}
+
+export interface BotInspectionReport {
+  bot_id: number;
+  bot_username: string;
+  clone_worker_tasks: {
+    active_count: number;
+    tasks: TaskSummary[];
+  };
+  webhook: BotWebhookDiagnostics;
+  polling_session: {
+    conflict_detected: boolean;
+    message?: string;
+  };
+  rate_limits: BotRateLimitDiagnostics;
+  recent_activities: ParsedBotActivity[];
 }
 
 export type TaskScope = "live" | "live_and_backfill" | "backfill_only";
