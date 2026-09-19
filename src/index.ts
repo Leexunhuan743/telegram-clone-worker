@@ -1,4 +1,12 @@
-import { handleDeleteBot, handleListBots, handleSyncWebhooks, handleUpdateBot, handleVerifyBot } from "./routes/api/bots";
+import {
+  handleDeleteBot,
+  handleDisconnectBotWebhook,
+  handleInspectBot,
+  handleListBots,
+  handleSyncWebhooks,
+  handleUpdateBot,
+  handleVerifyBot,
+} from "./routes/api/bots";
 import {
   handleAdHocTestCopy,
   handleBan,
@@ -91,6 +99,16 @@ export default {
       // /api/bots/verify — token check & workload status
       if (parts[1] === "bots" && parts[2] === "verify" && parts.length === 3 && request.method === "POST") {
         return handleVerifyBot(request, env);
+      }
+
+      // /api/bots/inspect — in-depth workload, external sessions & live activity check
+      if (parts[1] === "bots" && parts[2] === "inspect" && parts.length === 3 && request.method === "POST") {
+        return handleInspectBot(request, env);
+      }
+
+      // /api/bots/disconnect-webhook — safely disconnects webhook without dropping pending updates
+      if (parts[1] === "bots" && parts[2] === "disconnect-webhook" && parts.length === 3 && request.method === "POST") {
+        return handleDisconnectBotWebhook(request, env);
       }
 
       // /api/bots/:id

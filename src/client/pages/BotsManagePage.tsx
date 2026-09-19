@@ -3,6 +3,7 @@ import { api } from "../lib/api";
 import { usePolling } from "../lib/usePolling";
 import { useToast } from "../components/Toast";
 import { PageHero } from "../components/PageHero";
+import { BotActivityModal } from "../components/BotActivityModal";
 import { navigate } from "../lib/router";
 import type { BotSummary, TaskSummary } from "../../shared/rpcTypes";
 
@@ -11,6 +12,7 @@ export function BotsManagePage() {
   const [confirming, setConfirming] = useState<{ bot: BotSummary; taskCount: number } | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [inspectingBot, setInspectingBot] = useState<BotSummary | null>(null);
   const toast = useToast();
 
   async function startDelete(bot: BotSummary) {
@@ -91,6 +93,13 @@ export function BotsManagePage() {
                     {bot.label} <span className="text-muted">@{bot.bot_username}</span>
                   </span>
                   <div className="row" style={{ gap: 6 }}>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => setInspectingBot(bot)}
+                      title="Inspect what else this bot is doing"
+                    >
+                      🔍 Inspect
+                    </button>
                     <button className="btn btn-secondary btn-sm" onClick={() => startRename(bot)}>
                       Rename
                     </button>
@@ -129,6 +138,15 @@ export function BotsManagePage() {
             </button>
           </div>
         </div>
+      )}
+
+      {inspectingBot && (
+        <BotActivityModal
+          botId={inspectingBot.id}
+          botUsername={inspectingBot.bot_username}
+          onClose={() => setInspectingBot(null)}
+          onWebhookDisconnected={() => refetch()}
+        />
       )}
     </div>
   );

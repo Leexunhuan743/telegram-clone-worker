@@ -5,6 +5,7 @@ import { useToast } from "../components/Toast";
 import { PageHero } from "../components/PageHero";
 import { CapabilityChecklist } from "../components/CapabilityChecklist";
 import { PermissionErrorBanner } from "../components/PermissionErrorBanner";
+import { BotActivityModal } from "../components/BotActivityModal";
 import { navigate } from "../lib/router";
 import { getTaskDisplayInfo } from "../lib/useTasksContext";
 import type {
@@ -31,6 +32,7 @@ export function TaskWizardPage({ fromSavedId }: { fromSavedId?: string }) {
   const [pendingBot, setPendingBot] = useState<{ token: string; bot_id: number; bot_username: string } | null>(null);
   const [botActiveTasks, setBotActiveTasks] = useState<TaskSummary[] | null>(null);
   const [loadingBotTasks, setLoadingBotTasks] = useState(false);
+  const [showActivityModal, setShowActivityModal] = useState(false);
 
   function handleClearBot() {
     setSelectedBotId("");
@@ -428,14 +430,36 @@ export function TaskWizardPage({ fromSavedId }: { fromSavedId?: string }) {
                   </div>
                 </div>
               </div>
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={handleClearBot}
-                title="Choose a different bot"
-              >
-                Change Bot
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setShowActivityModal(true)}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                  title="Inspect what else this bot is doing"
+                >
+                  🔍 Check What Else Bot Is Doing
+                </button>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={handleClearBot}
+                  title="Choose a different bot"
+                >
+                  Change Bot
+                </button>
+              </div>
             </div>
+
+            {showActivityModal && (
+              <BotActivityModal
+                botId={selectedBotId || undefined}
+                botToken={pendingBot?.token}
+                botUsername={selectedBot?.bot_username ?? pendingBot?.bot_username}
+                onClose={() => setShowActivityModal(false)}
+                onWebhookDisconnected={() => {
+                  if (selectedBotId) handleSelectBot(selectedBotId);
+                }}
+              />
+            )}
 
             {loadingBotTasks && <div className="skeleton-row" style={{ height: 36 }} />}
 
@@ -612,6 +636,32 @@ export function TaskWizardPage({ fromSavedId }: { fromSavedId?: string }) {
                   {sourceLookup.memberCount !== undefined && ` · ${sourceLookup.memberCount} members`}
                 </p>
               </div>
+
+              {/* Group Chat Source Notice (Telegram Bot API Restriction) */}
+              {(sourceLookup.chat.type === "group" || sourceLookup.chat.type === "supergroup") && (
+                <div
+                  style={{
+                    background: "rgba(245, 158, 11, 0.08)",
+                    border: "1px solid rgba(245, 158, 11, 0.35)",
+                    borderRadius: "var(--radius)",
+                    padding: "12px 14px",
+                    marginBottom: 14,
+                  }}
+                >
+                  <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <span style={{ fontSize: 18, marginTop: 1 }}>⚠️</span>
+                    <div style={{ fontSize: 12.5, lineHeight: 1.5 }}>
+                      <strong style={{ color: "var(--warning)" }}>Group Chat Notice (Telegram Bot API Restriction):</strong>
+                      <p style={{ margin: "4px 0 6px", color: "var(--ink)" }}>
+                        Telegram prevents bots from seeing or copying messages sent by other bots in group chats (anti-loop policy). If this group relies on other bots to post files or messages, those bot-authored messages will not be copyable (they will be skipped as <em>"message to copy not found"</em>).
+                      </p>
+                      <span style={{ color: "var(--muted)", fontSize: 12 }}>
+                        💡 <strong>Recommendation:</strong> If you need complete file cloning, consider using a <strong>Telegram Channel</strong> as the source. Channel posts are published on behalf of the channel and can be copied freely by bots regardless of author.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Previous Task History for this Source Channel */}
               {sourceLookup.pastTasks && sourceLookup.pastTasks.length > 0 ? (
@@ -831,6 +881,32 @@ export function TaskWizardPage({ fromSavedId }: { fromSavedId?: string }) {
                   ? "bot can post here ✓"
                   : "bot cannot post here ✗"}
               </p>
+
+              {/* Destination Group Chat Warning for Future Operations */}
+              {(destLookup.chat.type === "group" || destLookup.chat.type === "supergroup") && (
+                <div
+                  style={{
+                    background: "rgba(56, 189, 248, 0.08)",
+                    border: "1px solid rgba(56, 189, 248, 0.3)",
+                    borderRadius: "var(--radius)",
+                    padding: "12px 14px",
+                    marginBottom: 16,
+                  }}
+                >
+                  <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <span style={{ fontSize: 18, marginTop: 1 }}>ℹ️</span>
+                    <div style={{ fontSize: 12.5, lineHeight: 1.5 }}>
+                      <strong style={{ color: "var(--info)" }}>Destination is a Group Chat:</strong>
+                      <p style={{ margin: "4px 0 6px", color: "var(--ink)" }}>
+                        Messages copied here will be sent under this bot's identity. <strong>Notice for future operations:</strong> Telegram's anti-loop rule prevents bots from copying messages sent by other bots in groups. If you or another bot ever attempt to clone messages <em>out</em> of this destination group later, those bot-authored messages will not be copyable.
+                      </p>
+                      <span style={{ color: "var(--muted)", fontSize: 12 }}>
+                        💡 <strong>Tip:</strong> If you are creating a permanent file archive or mirror intended to be cloned again by other bots in the future, a <strong>Telegram Channel</strong> is recommended.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="field">
                 <label>Copy Scope</label>
